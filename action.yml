@@ -41,6 +41,10 @@ inputs:
     description: "Where to write the attestation JSON of a passing verdict."
     required: false
     default: "certone-attestation.json"
+  sarif:
+    description: "Where to write the findings as SARIF 2.1.0 (upload with github/codeql-action/upload-sarif)."
+    required: false
+    default: "certone.sarif"
   soft-fail:
     description: "If 'true', always exit 0 (the verdict is still reported)."
     required: false
@@ -53,6 +57,9 @@ outputs:
   scan-id:
     description: "The CertOne scan id."
     value: ${{ steps.scan.outputs.scan-id }}
+  sarif-path:
+    description: "Path to the SARIF file."
+    value: ${{ inputs.sarif }}
 
 runs:
   using: composite
@@ -63,7 +70,7 @@ runs:
         python-version: "3.12"
     - name: Install the CertOne SDK
       shell: bash
-      run: pip install --disable-pip-version-check --quiet "certone-sdk>=0.2.1"
+      run: pip install --disable-pip-version-check --quiet "certone-sdk>=0.2.2"
     - name: Confidential scan on CertOne
       id: scan
       shell: bash
@@ -77,6 +84,7 @@ runs:
         INPUT_FAIL_ON: ${{ inputs.fail-on }}
         INPUT_REPORT: ${{ inputs.report }}
         INPUT_ATTESTATION: ${{ inputs.attestation }}
+        INPUT_SARIF: ${{ inputs.sarif }}
         INPUT_SOFT_FAIL: ${{ inputs.soft-fail }}
       run: |
         set -uo pipefail
@@ -85,7 +93,7 @@ runs:
           --environment ci --tee "$INPUT_TEE" --country-code "$INPUT_COUNTRY" \
           --fail-on "$INPUT_FAIL_ON" --snapshot-ref "git:${GITHUB_REPOSITORY}@${GITHUB_SHA}" \
           --report-out "$INPUT_REPORT" --attestation-out "$INPUT_ATTESTATION" \
-          --markdown-out "$GITHUB_STEP_SUMMARY" | tee certone-submit.log
+          --sarif-out "$INPUT_SARIF" --markdown-out "$GITHUB_STEP_SUMMARY" | tee certone-submit.log
         status=${PIPESTATUS[0]}
         scan=$(sed -n 's/.*: scan \([0-9a-f]*\) .*/\1/p' certone-submit.log | head -1)
         echo "scan-id=$scan" >> "$GITHUB_OUTPUT"
