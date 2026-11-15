@@ -12,7 +12,7 @@ permissions:
 
 steps:
   - uses: actions/checkout@v4
-  - uses: admin-certkorai/certone-action@v1
+  - uses: certkorai/certone-action@v1
     with:
       api-key: ${{ secrets.CERTONE_API_KEY }}
       path: adas-perception
